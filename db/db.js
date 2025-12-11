@@ -1,7 +1,7 @@
-const mysql=require('mysql')
+const mysql=require('mysql2')
 
 const db=mysql.createPool({
-    host:'0.0.0.0',
+    host:'localhost',
     user:'root',
     password:'123456',
     database:'vue_beidou4'

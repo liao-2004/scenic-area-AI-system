@@ -15,6 +15,7 @@ exports.mqtt_data=async(ctx)=>{
         })))
 }
 exports.mqtt_load=async(ctx)=>{
+    console.log('mqtt_load函数')
     const results = await new Promise((resolve,rejust)=>{
         select_mysql=`
         SELECT l.*
@@ -40,3 +41,14 @@ exports.mqtt_load=async(ctx)=>{
             dzwl:item.dzwl
         })))
 }
+exports.bug_mysql = async (ctx) => {
+  console.log('访问bug网页中');
+  try {
+    // 关键：在query前调用.promise()转换为Promise接口
+    const [results] = await db.promise().query('SELECT * FROM machine'); 
+    ctx.body = [results, 'bug网页访问成功'];
+  } catch (err) {
+    console.error('数据库查询错误：', err);
+    ctx.body = 'bug查询网页访问失败';
+  }
+};

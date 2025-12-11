@@ -4,7 +4,12 @@ const static = require('koa-static');
 const path = require('path');
 const fs = require('fs/promises');
 const bodyParser = require('koa-bodyparser');
+const { ReadableStream } = require('web-streams-polyfill');
+global.ReadableStream = ReadableStream; // 让全局环境能访问到 ReadableStream
 
+// 引入 Blob Polyfill 并全局注册
+const { Blob } = require('blob-polyfill');
+global.Blob = Blob; // 让全局环境能访问到 Blob
  const { setupDatabase } = require('./dbSetup');
 const router = require('./router/user.js');
 const mqtt_pub = require('./router/mqtt_pub.js');
