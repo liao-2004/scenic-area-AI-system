@@ -14,6 +14,7 @@ global.Blob = Blob; // 让全局环境能访问到 Blob
 const router = require('./router/user.js');
 const mqtt_pub = require('./router/mqtt_pub.js');
 const mqtt_sub = require('./router/mqtt_sub.js');
+const AI_api = require('./router/ai_api.js');
 const mqtt = require('./router/mqtt.js');
 
 const app = new Koa();
@@ -35,6 +36,8 @@ app.use(mqtt_sub.allowedMethods());
 app.use(mqtt.routes());
 app.use(mqtt.allowedMethods());
 app.use(static(path.join(__dirname, 'dist')));
+app.use(AI_api.routes());
+app.use(AI_api.allowedMethods());
 const dbSetupSuccess =  setupDatabase();
 app.use(async (ctx) => { 
   ctx.type = 'text/html';
