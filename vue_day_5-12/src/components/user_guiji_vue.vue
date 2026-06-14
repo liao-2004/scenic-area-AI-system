@@ -20,6 +20,12 @@
                         :styles="styles"
                         :options="options"
                     />
+                <!-- 用户当前位置：用 人流量.png 标记 -->
+                <tlbs-multi-marker
+                        ref="markerRef"
+                        :geometries="markerGeometries"
+                        :styles="styles"
+                    />
             </tlbs-map>
         </div>
         <span slot="footer" class="dialog-footer">
@@ -39,11 +45,14 @@ export default {
              showModal1:false,
             center:{ lat: 27.84685996895247, lng: 112.92757039732737 },
             polylineGeometries: [],
+            markerGeometries: [],
             styles: {
                 marker: {
-                width: 20,
-                height: 30,
-                anchor: { x: 10, y: 30 },
+                width: 16,
+                height: 16,
+                anchor: { x: 16, y: 32 },
+                src: '/人流量.png', // 用户位置图标
+                imageSize: { width: 16, height: 16 }
                 },
                 polyline: {
                 color: '#2C68FF', // 线填充色
@@ -79,99 +88,68 @@ export default {
         }
     },
     methods:{
+        // 拉取该用户坐标并渲染到地图（公共方法）
+        fetchAndRender(){
+            return axios({
+                url:this.IPV4+':3000/mqtt/mqtt_data',
+                params:{ no:this.no }
+            }).then(results=>{
+                const data = Array.isArray(results.data) ? results.data : []
+                if(!data.length){
+                    // 无坐标数据：清空轨迹和标记，提示
+                    this.polylineGeometries=[]
+                    this.markerGeometries=[]
+                    if(this.showModal1){
+                        this.$message && this.$message.warning('该用户暂无坐标数据')
+                    }
+                    return
+                }
+                // 地图中心定位到最新一个点
+                const last = data[data.length-1]
+                this.center = { lat: Number(last.lat), lng: Number(last.lng) }
+                // 用 人流量.png 在用户最新位置打标记
+                this.markerGeometries = [
+                    {
+                        id: 'user-marker',
+                        styleId: 'marker',
+                        position: { lat: Number(last.lat), lng: Number(last.lng) }
+                    }
+                ]
+                // 多个点才画轨迹线，单个点只定位中心（已设置）
+                if(data.length>1){
+                    this.polylineGeometries=[
+                        {
+                            id: 'polyline1',
+                            styleId: 'polyline',
+                            paths: data.map(item=>({ lat:Number(item.lat), lng:Number(item.lng) })),
+                            properties: { title: 'polyline' }
+                        }
+                    ]
+                }else{
+                    this.polylineGeometries=[]
+                }
+            }).catch(err=>{
+                console.log(err && err.message)
+            })
+        },
         settimefun(){
             this.timer = setInterval(() => {
-            console.log('计时器启动中')
-        axios({
-            url: this.IPV4+':3000/mqtt/mqtt_data',
-            params: {
-                no: this.no
-            }
-        }).then(results=>{
-                if(results.data.length>1&&results.data){
-                this.center={ lat: results.data[results.data.length-1].lat, lng: results.data[results.data.length-1].lng }
-                this.polylineGeometries=[
-                      {
-                        id: 'polyline1',
-                        styleId: 'polyline',
-                        paths:results.data.map(item=>({
-                          lat:item.lat,
-                          lng:item.lng
-                        })),
-                        properties: { title: 'polyline' }
-                      }
-                    ]
-                }
-                }).catch(err=>{
-                    if(err){
-                        console.log(err.message)
-                    }
-                })
-    }, 5000);
+                console.log('计时器启动中')
+                this.fetchAndRender()
+            }, 5000);
         },
         startfun(){
-        axios({
-                url:this.IPV4+':3000/mqtt/mqtt_data',
-                params:{
-                    no:this.no
-                }
-              }).then(results=>{
-                if(results.data.length>1&&results.data){
-                this.center={ lat: results.data[results.data.length-1].lat, lng: results.data[results.data.length-1].lng }
-                this.polylineGeometries=[
-                      {
-                        id: 'polyline1',
-                        styleId: 'polyline',
-                        paths:results.data.map(item=>({
-                          lat:item.lat,
-                          lng:item.lng
-                        })),
-                        properties: { title: 'polyline' }
-                      }
-                    ]
-                }
-                }).catch(err=>{
-                    if(err){
-                        console.log(err.message)
-                    }
-                })
-                this.showModal1=true
-                this.settimefun()
-      },
-      loadfun(){
-        console.log(22499)
-        axios({
-                url:this.IPV4+':3000/mqtt/mqtt_data',
-                params:{
-                    no:this.no
-                }
-              }).then(results=>{
-                if(results.data.length>1&&results.data){
-                this.center={ lat: results.data[results.data.length-1].lat, lng: results.data[results.data.length-1].lng }
-                this.polylineGeometries=[
-                      {
-                        id: 'polyline1',
-                        styleId: 'polyline',
-                        paths:results.data.map(item=>({
-                          lat:item.lat,
-                          lng:item.lng
-                        })),
-                        properties: { title: 'polyline' }
-                      }
-                    ]
-                }else if(results.data.length==1){
-                    this.center={ lat: results.data[results.data.length-1].lat, lng: results.data[results.data.length-1].lng }
-                }
-                }).catch(err=>{
-                    if(err){
-                        console.log(err.message)
-                    }
-                })
-      },
-      stopFun(){
-        clearInterval(this.timer);
-        this.showModal1=false
-      }
+            this.fetchAndRender()
+            this.showModal1=true
+            this.settimefun()
+        },
+        loadfun(){
+            this.fetchAndRender()
+        },
+        stopFun(){
+            clearInterval(this.timer);
+            this.showModal1=false
+        }
     },
 beforeDestroy() {
     // 组件销毁前清除定时器

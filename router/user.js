@@ -8,6 +8,8 @@ const dayjs=require('dayjs')
 router.post('/word',userHandle.addword)
 router.get('/select',userHandle.selectword)
 router.get('/select_date',userHandle.select_date)
+router.post('/user_update',userHandle.user_update)
+router.post('/user_delete',userHandle.user_delete)
 router.get('/start',userHandle.start)
 router.get('/yuyue_insert',(ctx) => {
   console.log('技师',ctx.query)

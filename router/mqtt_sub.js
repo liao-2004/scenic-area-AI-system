@@ -46,6 +46,23 @@ function broadcastMessage(message) {
 //   broadcastMessage(value)
 // },3000)
 
+// uni-app 紧急救援：小程序/H5 点击“紧急救援”后 POST 到这里，
+// 后端再通过 socket.io 广播给 web 端（与 MQTT 上报的 sos 走同一通道、同一数据结构）
+mqtt_sub.post('/sos', (ctx) => {
+  const body = ctx.request.body || {}
+  const payload = {
+    title: 'sos',
+    id: body.id || '',          // 用户 id -> web 端“设备编号”列
+    date: dayjs().format('YYYY-MM-DD HH:mm'),
+    name: body.name || '未知用户',
+    lat: body.lat,
+    lng: body.lng,
+  }
+  console.log('收到 uni-app 紧急救援:', payload)
+  broadcastMessage(payload)
+  ctx.body = { code: 0, message: '救援请求已发送' }
+})
+
 //------------------------------------------------------------
 
 
@@ -66,9 +83,10 @@ client.on('message', (topic, message) => {
       console.log(data,'sos')
       broadcastMessage({
         title:'sos',
+        id: data.ID,            // 设备/用户编号 -> web 端“设备编号”列
         date: dayjs().format('YYYY-MM-DD HH:mm'),
         name: data.ID,
-        lat: data.lat, 
+        lat: data.lat,
         lng: data.lng,
       })
     }

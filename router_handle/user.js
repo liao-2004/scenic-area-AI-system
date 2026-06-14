@@ -20,9 +20,27 @@ exports.addword=(ctx)=>{
 }
 exports.selectword=async(ctx)=>{
     const offset=parseInt(ctx.query.index,10)||0
-    const mysql=`select id,open_id as no,nickname as username,createdAt as time,dianhua from user limit 9 OFFSET ?`
+    // 搜索：field=id|nickname|dianhua，keyword 为关键字（编号精确，姓名/电话模糊）
+    const field=ctx.query.field
+    const keyword=(ctx.query.keyword||'').trim()
+    let where=''
+    const params=[]
+    if(keyword){
+        if(field==='id'){
+            where='where id = ?'
+            params.push(keyword)
+        }else if(field==='nickname'){
+            where='where nickname like ?'
+            params.push(`%${keyword}%`)
+        }else if(field==='dianhua'){
+            where='where dianhua like ?'
+            params.push(`%${keyword}%`)
+        }
+    }
+    const mysql=`select id,open_id as no,nickname as username,createdAt as time,dianhua from user ${where} order by id asc limit 9 OFFSET ?`
+    params.push(offset)
     const results = await new Promise((resolve,reject)=>{
-        index.query(mysql,[offset],(err,results)=>{
+        index.query(mysql,params,(err,results)=>{
             if(err) reject(err)
                 else resolve(results)
             })
@@ -274,25 +292,77 @@ exports.start=async(ctx)=>{
      }
 }
 
+// 下载今日入园旅客信息：user_data 中今日 dwzl=1 的记录判定为“入园”，
+// 取这些去重后的 no 关联 user 表（user.id = user_data.no），
+// 返回旅客基本信息及今日首次入园时间
 exports.select_date=async(ctx)=>{
-    const mysql = `select no from user_data where time > ? GROUP BY no`;
-        const results = await new Promise((resolve, reject) => { 
-            index.query(mysql, [dayjs().format('YYYY-MM-DD')], (err, result) => {
-                if (err) return reject(err.message);
-                resolve(result);
-            });
+    const today=dayjs().format('YYYY-MM-DD')
+    // 子查询：今日（按日期）dwzl=1 的去重旅客编号及其今日最早入园时间
+    const mysql=`
+        SELECT
+            u.nickname AS username,
+            u.id       AS no,
+            u.dianhua  AS dianhua,
+            d.enter_time AS time
+        FROM (
+            SELECT no, MIN(time) AS enter_time
+            FROM user_data
+            WHERE DATE(time) = ? AND dwzl = 1
+            GROUP BY no
+        ) d
+        INNER JOIN user u ON u.id = d.no
+        ORDER BY d.enter_time ASC`
+    const results = await new Promise((resolve, reject) => {
+        index.query(mysql, [today], (err, result) => {
+            if (err) return reject(err.message);
+            resolve(result);
         });
+    });
 
-        let list = [];
-        for (let i = 0; i < results.length; i++) { 
-            let results1 = await new Promise((resolve, reject) => { 
-                index.query(`select * from user where no = ?`, [results[i].no], (err, result) => {
-                    if (err) return reject(err.message);
-                    resolve(result);
-                });
-            });
-            list.push(results1);
-        }
+    ctx.body = results;
+}
 
-        ctx.body = list;
+// 编辑用户：更新昵称、电话
+exports.user_update=async(ctx)=>{
+    const { id, nickname, dianhua }=ctx.request.body||{}
+    if(!id){
+        ctx.body={ code:1, message:'缺少 id 参数' }
+        return
+    }
+    try{
+        const now=dayjs().format('YYYY-MM-DD HH:mm:ss')
+        await new Promise((resolve,reject)=>{
+            index.query(
+                'update user set nickname=?, dianhua=?, updatedAt=? where id=?',
+                [nickname||null, dianhua||null, now, id],
+                (err,result)=>{ if(err) reject(err); else resolve(result) }
+            )
+        })
+        ctx.body={ code:0, message:'更新成功' }
+    }catch(err){
+        console.error('更新用户失败:', err.message)
+        ctx.status=500
+        ctx.body={ code:1, message:'更新失败' }
+    }
+}
+
+// 删除用户
+exports.user_delete=async(ctx)=>{
+    const { id }=ctx.request.body||{}
+    if(!id){
+        ctx.body={ code:1, message:'缺少 id 参数' }
+        return
+    }
+    try{
+        await new Promise((resolve,reject)=>{
+            index.query('delete from user where id=?',[id],(err,result)=>{
+                if(err) reject(err); else resolve(result)
+            })
+        })
+        ctx.body={ code:0, message:'删除成功' }
+    }catch(err){
+        console.error('删除用户失败:', err.message)
+        ctx.status=500
+        ctx.body={ code:1, message:'删除失败' }
+    }
 }

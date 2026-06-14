@@ -40,7 +40,7 @@
             />
                     <tlbs-multi-marker
                     ref="markerRef"
-                    :geometries="geometries1"
+                    :geometries="geometries"
                     :styles="styles"
                     :options="options"
                     />
@@ -210,19 +210,18 @@ export default {
                     // imageSize: { width: 80, height:80 } 
                 },
         marker_dzwl1: {
-                    width: 1,
-                    height: 1,
-                    // anchor: { x: 10, y: 30 }, 
+                    width: 24,
+                    height: 24,
+                    anchor: { x: 12, y: 12 },
                     src: '/人流量1.png',
-                    imageSize: { width: 1, height: 1 } 
+                    imageSize: { width: 24, height: 24 }
                 },
         marker_dzwl0: {
-                    width: 5,
-                    height: 5,
-                    // anchor: { x: 10, y: 30 }, 
+                    width: 24,
+                    height: 24,
+                    anchor: { x: 12, y: 12 },
                     src: '/人流量.png',
-                    imageSize: { width: 5, height: 5 }
-                    
+                    imageSize: { width: 24, height: 24 }
                 },
         polyline: {
           color: '#2C68FF', // 线填充色
@@ -289,34 +288,49 @@ export default {
         this.socket = io(this.IPV4+':4000');
           this.socket.on('message', (msg) => {
             if(msg.title=='py'){
-              console.log(msg.value.predictions)
-              // this.jingdian.forEach((item,index)=>{
-              //   item.congestion_level=msg.value.predictions[index].congestion_level,
-              //   item.crowd_count=msg.value.predictions[index].crowd_count,
-              //   item.time_range=msg.value.predictions[index].time_range
-              // })
+              const preds = msg.value && msg.value.predictions
+              if(Array.isArray(preds)){
+                // 用 AI 预测结果更新各景点拥挤度/人数（按景点顺序一一对应），
+                // 用 map 重建数组以触发视图与信息窗刷新
+                this.jingdian = this.jingdian.map((item,index)=>{
+                  const p = preds[index]
+                  if(!p) return item
+                  return {
+                    ...item,
+                    congestion_level: p.congestion_level,
+                    crowd_count: p.crowd_count,
+                    time_range: p.time_range
+                  }
+                })
+                // 收到预测后显示景点信息窗
+                this.visible = true
+              }
             }
         });
       },
+      // 拉取每个用户的最新坐标并显示在地图上（后端按 no 取 MAX(time) 的记录）
       click_fun(){
         axios({
           url:this.IPV4+':3000/mqtt/mqtt_load',
         }).then(results=>{
           if(results.data.length!=0){
+          // 每个用户一个圆点：dzwl=0 围栏内(人流量.png)，否则围栏外(人流量1.png)；坐标转数字
           this.geometries=results.data.map(item=>(
             item.dzwl==0?{
-              styleId: 'marker_dzwl0', position: { lat: item.lat, lng: item.lng }
+              styleId: 'marker_dzwl0', position: { lat: Number(item.lat), lng: Number(item.lng) }
             }:{
-              styleId: 'marker_dzwl1', position: { lat: item.lat, lng: item.lng }
+              styleId: 'marker_dzwl1', position: { lat: Number(item.lat), lng: Number(item.lng) }
             }
           ))
           this.geometries.push({
-            styleId: 'marker', position: { lat: this.jingdian[0].lat, lng:  this.jingdian[0].lng }
+            styleId: 'marker', position: { lat: Number(this.jingdian[0].lat), lng: Number(this.jingdian[0].lng) }
           },{
-            styleId: 'marker', position: { lat: this.jingdian[1].lat, lng:  this.jingdian[1].lng }
+            styleId: 'marker', position: { lat: Number(this.jingdian[1].lat), lng: Number(this.jingdian[1].lng) }
           },{
-            styleId: 'marker', position: { lat: this.jingdian[2].lat, lng:  this.jingdian[2].lng }
+            styleId: 'marker', position: { lat: Number(this.jingdian[2].lat), lng: Number(this.jingdian[2].lng) }
           })}
+        }).catch(err=>{
+          console.error('加载用户最新坐标失败', err)
         })
       }
   },

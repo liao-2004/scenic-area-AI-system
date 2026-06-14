@@ -89,6 +89,9 @@ async function findOrCreateUser(openid) {
     }
     const result = await queryAsync('insert into user set ?', [newUser])
     newUser.id = result.insertId
+    // 昵称后面拼上用户 id（id 是插入后才生成的自增值），并回写数据库
+    newUser.nickname = `微信用户${newUser.id}`
+    await queryAsync('update user set nickname = ?, updatedAt = ? where id = ?', [newUser.nickname, now, newUser.id])
     return { user: newUser, isNewUser: true }
 }
 
@@ -210,6 +213,29 @@ exports.profile = async (ctx) => {
         return
     }
     ctx.body = { code: 0, message: 'ok', userInfo: rows[0] }
+}
+
+// ===== 控制器：补全/更新当前登录用户电话（需鉴权）=====
+// POST /api/profile/phone   body: { dianhua }
+// 紧急救援前若用户未填电话，前端调用此接口把手机号写入 user 表
+exports.updatePhone = async (ctx) => {
+    const { uid } = ctx.state.user
+    const { dianhua } = ctx.request.body || {}
+    const phone = String(dianhua || '').trim()
+    if (!/^1\d{10}$/.test(phone)) {
+        ctx.status = 400
+        ctx.body = { code: 1, message: '请输入正确的11位手机号' }
+        return
+    }
+    try {
+        const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+        await queryAsync('update user set dianhua = ?, updatedAt = ? where id = ?', [phone, now, uid])
+        ctx.body = { code: 0, message: '保存成功', dianhua: phone }
+    } catch (err) {
+        console.error('保存电话失败:', err.message)
+        ctx.status = 500
+        ctx.body = { code: 1, message: '保存电话异常' }
+    }
 }
 
 // ===== 控制器：上报坐标（需鉴权）=====

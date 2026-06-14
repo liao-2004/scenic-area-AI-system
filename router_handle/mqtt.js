@@ -2,17 +2,19 @@ const db=require('../db/db')
 const index=require('../db/index')
 const dayjs=require('dayjs')
 exports.mqtt_data=async(ctx)=>{
-    console.log(ctx.query.no)
-    const results = await new Promise((resolve,rejust)=>{
-        index.query(`select zuobiao from user_data where no=${ctx.query.no}`,(err,results)=>{
-            if(err) rejust(err)
+    console.log('查看位置 no=', ctx.query.no)
+    // 参数化查询，按时间升序返回该用户的坐标轨迹
+    const results = await new Promise((resolve,reject)=>{
+        index.query('select zuobiao, time from user_data where no = ? order by time asc',[ctx.query.no],(err,results)=>{
+            if(err) reject(err)
                 else resolve(results)
             })
         })
-    ctx.body=(results.map(item=>({
-            lat:item.zuobiao.split(',')[0],
-            lng:item.zuobiao.split(',')[1]
-        })))
+    // 坐标转成数字，并过滤掉解析失败的脏数据，供腾讯地图组件使用
+    ctx.body = results.map(item=>{
+        const parts = String(item.zuobiao||'').split(',')
+        return { lat: Number(parts[0]), lng: Number(parts[1]) }
+    }).filter(p=>!isNaN(p.lat)&&!isNaN(p.lng))
 }
 exports.mqtt_load=async(ctx)=>{
     console.log('mqtt_load函数')

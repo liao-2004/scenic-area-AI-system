@@ -11,6 +11,9 @@ router.post('/login', authHandle.login)
 // 获取当前登录用户信息（需携带 token 鉴权）
 router.get('/profile', authHandle.authMiddleware, authHandle.profile)
 
+// 补全/更新当前登录用户电话（需鉴权）：紧急救援前若未填电话则调用
+router.post('/profile/phone', authHandle.authMiddleware, authHandle.updatePhone)
+
 // 上报坐标（需携带 token 鉴权）：以用户 id 作为 no 存入 user_data
 router.post('/location', authHandle.authMiddleware, authHandle.reportLocation)
 

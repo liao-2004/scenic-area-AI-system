@@ -303,7 +303,7 @@ export default {
           message: h('p', null, [
             h('span',{ 
       style: { 
-        fontSize: '30px', // 放大文字大小（默认一般是14px）
+        fontSize: '14px', // 放大文字大小（默认一般是14px）
         lineHeight: '1.5' // 可选：调整行高
       } 
     }, '收到一条求救消息')
@@ -327,7 +327,7 @@ export default {
               this.open1()
               // 实时救援消息：来自设备的 SOS（不落库，仅实时展示）
               this.tableData.unshift({
-                id:msg.name,
+                id:msg.id || msg.name,
                 date:msg.date,
                 sos_date: '----',
                 name: msg.name,
