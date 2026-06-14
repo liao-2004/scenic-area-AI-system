@@ -7,6 +7,7 @@
       <nav class="navlist">
         <a href="#/wulian" class="nav-link">景区管理</a>
         <a href="#/aichat" class="nav-link">智能AI</a>
+        <a href="#/publish" class="nav-link">发布文章</a>
       </nav>
     </header>
     <main class="content">

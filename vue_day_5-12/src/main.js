@@ -11,6 +11,7 @@ import VueRouter from 'vue-router'
 Vue.prototype.quanju=false
 import AICHAT from './views/aiChat.vue'
 import WULIAN from './views/wulianRouter.vue'
+import PUBLISH from './views/publish.vue'
 
 Vue.use(VueRouter)
 Vue.use(ElementUI);
@@ -21,7 +22,8 @@ const router =new VueRouter({
   routes:[
     {path:'/',redirect:'/aichat'},
     {path:'/aichat',component:AICHAT},
-    {path:'/wulian',component:WULIAN}
+    {path:'/wulian',component:WULIAN},
+    {path:'/publish',component:PUBLISH}
   ]
 })
 

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "景区地图",
+  "usingComponents": {
+    "newsbox": "/components/newsbox/newsbox"
+  }
+}

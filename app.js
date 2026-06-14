@@ -12,6 +12,8 @@ const { Blob } = require('blob-polyfill');
 global.Blob = Blob; // 让全局环境能访问到 Blob
  const { setupDatabase } = require('./dbSetup');
 const router = require('./router/user.js');
+const auth = require('./router/auth.js');
+const news = require('./router/news.js');
 const mqtt_pub = require('./router/mqtt_pub.js');
 const mqtt_sub = require('./router/mqtt_sub.js');
 const AI_api = require('./router/ai_api.js');
@@ -29,6 +31,10 @@ const staticPath = path.join(__dirname, 'public');
 app.use(static(staticPath));
 app.use(router.routes());
 app.use(router.allowedMethods());
+app.use(auth.routes());
+app.use(auth.allowedMethods());
+app.use(news.routes());
+app.use(news.allowedMethods());
 app.use(mqtt_pub.routes());
 app.use(mqtt_pub.allowedMethods());
 app.use(mqtt_sub.routes());
@@ -44,5 +50,5 @@ app.use(async (ctx) => {
   ctx.body = await fs.readFile(path.resolve(__dirname, 'dist', 'index.html'));
 });
 app.listen(port, () => {
-  console.log(`Server is running at http://0.0.0.0:${port}`);
+  console.log(`Server is running at http://127.0.0.1:${port}`);
 });

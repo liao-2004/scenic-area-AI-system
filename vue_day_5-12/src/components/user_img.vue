@@ -95,7 +95,13 @@ export default {
       this.option={}
       // 初始化图表
       this.chart = echarts.init(this.$refs.img)
-      
+
+      // 兼容后端返回的 {period, record_count} 与默认的 {name, value}
+      const pieData = this.img_data.img1[day].map(item => ({
+        name: item.name !== undefined ? item.name : item.period,
+        value: item.value !== undefined ? item.value : item.record_count
+      }))
+
       // 设置图表配置
       this.option = {
             title: {
@@ -110,7 +116,7 @@ export default {
     legend: {
         bottom: 10,
         left: 'center',
-        data: this.img_data.img1[day].map(item=>
+        data: pieData.map(item=>
             item.name
         )
     },
@@ -120,7 +126,7 @@ export default {
         radius: '65%',
         center: ['50%', '50%'],
         selectedMode: 'single',
-        data: this.img_data.img1[day],
+        data: pieData,
         emphasis: {
             itemStyle: {
             shadowBlur: 10,
@@ -174,6 +180,9 @@ export default {
                 this.img_data.img1[index]=[{period:'暂无数据',record_count:1}]
             }
         })
+        // 数据返回后用真实数据重绘两张图表
+        this.initChart(0)
+        this.initChart1()
     })
         this.initChart(0)
         this.initChart1()

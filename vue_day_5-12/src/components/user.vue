@@ -42,12 +42,12 @@
                   </el-table-column>
                   <el-table-column label="查看位置">
                     <template slot-scope="scope"> 
-                        <user_guiji :no="scope.row.id"></user_guiji>
+                        <user_guiji :no="scope.row.no"></user_guiji>
                     </template>
                   </el-table-column>
                 </el-table>
             <div :style="{margin:'40px',display:'flex',alignItems:'center',justifyContent:'center',gap:'15px'}">
-              <el-button>上一页</el-button> {{ index+1 }}<el-button>下一页</el-button><el-button 
+              <el-button @click="prevPage">上一页</el-button> {{ index+1 }}<el-button @click="nextPage">下一页</el-button><el-button
                 type="success" 
                 icon="el-icon-download" 
                 @click="downloadTable"
@@ -256,12 +256,25 @@ export default {
             axios({
                 url:`${this.IPV4}/api/select`,
                 params:{
-                    index:this.index*11
+                    index:this.index*9
                 }
             }).then(results=>{
-                // this.tableData=results.data
+                this.tableData=results.data
                 console.log(results)
             })
+        },
+        prevPage(){
+            if(this.index>0){
+                this.index--
+                this.load_fun()
+            }
+        },
+        nextPage(){
+            // 满 9 条说明可能还有下一页
+            if(this.tableData.length===9){
+                this.index++
+                this.load_fun()
+            }
         },
         downloadTable() {
           axios({

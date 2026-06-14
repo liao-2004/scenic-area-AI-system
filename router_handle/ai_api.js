@@ -15,9 +15,8 @@ const MODEL = "ep-20260612111855-9rkrr";
 // 接收前端 FormData（text 文本 + image 图片文件），调用视觉模型并返回结果
 exports.runVisionChat = async (ctx) => {
   // multer 解析后：文本字段在 ctx.request.body，文件在 ctx.file
-  const text = (ctx.request.body && ctx.request.body.text) || '你是谁';
+  const text = '回答的字数限制在200字以内'+(ctx.request.body && ctx.request.body.text) || '你是谁';
   const file = ctx.file;
-
   console.log('开始调用火山方舟视觉模型, text=', text, ', 是否含图片=', !!file);
 
   // 组装消息内容

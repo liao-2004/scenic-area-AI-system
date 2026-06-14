@@ -107,6 +107,7 @@ import sos_user from '../components/sos_user.vue'
 import user from '../components/user.vue'
 import paizhao from '../components/paizhao.vue'
 import axios from 'axios'
+import dayjs from 'dayjs'
 export default {
     components:{
         tmp,
@@ -324,17 +325,18 @@ export default {
             if(msg.title=='sos'){
               this.closeMessage()
               this.open1()
-              // this.tableData.unshift({
-              //   id:this.i++,
-              //   date:dayjs().format('YYYY-MM-DD HH-mm'),
-              //   sos_date: '----',
-              //   name: '李大虎',
-              //   lat: msg.lat, 
-              //   lng: msg.lng,
-              //   address: '上海市普陀区金沙江路 1518 弄',
-              //   ok_value:true,
-              //   danwei:'--'
-              // })
+              // 实时救援消息：来自设备的 SOS（不落库，仅实时展示）
+              this.tableData.unshift({
+                id:msg.name,
+                date:msg.date,
+                sos_date: '----',
+                name: msg.name,
+                lat: msg.lat,
+                lng: msg.lng,
+                address: '--',
+                ok_value:true,
+                danwei:'--'
+              })
             }
         });
       },
@@ -356,19 +358,16 @@ export default {
       f5Fun(title){
         this.tableData.forEach(item=>{
           if(title.id==item.id){
-            item.ok_value=false,
+            item.ok_value=false
             item.danwei=title.name
-            // item.sos_date=dayjs().format('YYYY-MM-DD HH-mm')
-            if(item.date=='2025-08-17 15:24'){
-              item.sos_date='2025-08-17 15:25'
-            }else{
-              item.sos_date='2025-08-17 14:25'
-            }
+            item.sos_date=dayjs().format('YYYY-MM-DD HH:mm')
           }
         })
       }
     },
     created(){
+      // 救援消息为实时数据，清空示例 mock，仅展示来自 socket 的真实 SOS
+      this.tableData=[]
       this.scoket()
     },
     beforeDestroy() {

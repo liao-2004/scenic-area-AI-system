@@ -19,11 +19,11 @@ exports.addword=(ctx)=>{
     })
 }
 exports.selectword=async(ctx)=>{
-    console.log(1)
-    const mysql=`select open_id as no,nickname as username,createdAt as time,dianhua from user limit 9 OFFSET ${parseInt(ctx.query.index,10)}`
-    const results = await new Promise((resolve,rejust)=>{
-        index.query(mysql,(err,results)=>{
-            if(err) rejust(err)
+    const offset=parseInt(ctx.query.index,10)||0
+    const mysql=`select id,open_id as no,nickname as username,createdAt as time,dianhua from user limit 9 OFFSET ?`
+    const results = await new Promise((resolve,reject)=>{
+        index.query(mysql,[offset],(err,results)=>{
+            if(err) reject(err)
                 else resolve(results)
             })
         })
@@ -234,6 +234,26 @@ exports.start=async(ctx)=>{
         WHERE time BETWEEN '${dayjs().subtract(1, 'day').format('YYYY-MM-DD')}' AND '${dayjs().subtract(0, 'day').format('YYYY-MM-DD')}'
         GROUP BY no
         ) AS grouped_no;`
+     // 近7天每天的去重旅客人数（旅客人数统计折线图数据）
+     const dayKeys=[]
+     const dayLabels=[]
+     for(let i=7;i>=1;i--){
+        dayKeys.push(dayjs().subtract(i,'day').format('YYYY-MM-DD'))
+        dayLabels.push(dayjs().subtract(i,'day').format('MM月DD日'))
+     }
+     const img2_rows=await new Promise((resolve,reject)=>{
+        index.query(`SELECT DATE(time) AS day, COUNT(DISTINCT no) AS cnt
+            FROM user_data
+            WHERE time >= '${dayKeys[0]}'
+            GROUP BY DATE(time);`,(err,result)=>{
+        if(err)return reject(err)
+        resolve(result)
+     })})
+     const countMap={}
+     img2_rows.forEach(row=>{
+        countMap[dayjs(row.day).format('YYYY-MM-DD')]=row.cnt
+     })
+     const img2_data=dayKeys.map(k=>countMap[k]||0)
      console.log({
         value1:result_select1,
         value2:result_select2,
@@ -247,9 +267,10 @@ exports.start=async(ctx)=>{
             result_select3,
             result_select4
         ],
-        img2:[
-            
-        ]
+        img2:{
+            list:dayLabels,
+            data:img2_data
+        }
      }
 }
 

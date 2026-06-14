@@ -3,10 +3,6 @@
         <div :style="{display:'flex','justify-content':'space-between'}">
             <h5 :style="{margin:'auto 25px',fontWeight: '900'}">人流密度</h5>
             <div :style="{display:'flex',justifyContent:'space-between',gap:'40px'}">
-              <div :style="{marginTop:'8px'}">
-                <el-button v-if="visible" type="info" @click="visible=!visible">{{ visible?'关闭人流预测':'打开人流预测' }}</el-button>
-                <el-button v-if="!visible" type="primary" @click="fun">{{ visible?'关闭人流预测':'打开人流预测' }}</el-button>
-              </div>
               <div>
                 <div>
                   <img src="../../public/人流量.png" :style="{height:'10px',width:'10px'}">
